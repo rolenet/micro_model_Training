@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}环境检测 - 大模型微调平台{% endblock %}
+
+{% block page_title %}环境检测{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">环境检测结果</h5>
+                {% if is_suitable %}
+                <div class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle"></i> 当前环境适合进行模型微调
+                </div>
+                {% else %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> 当前环境不适合进行模型微调
+                </div>
+                <div class="mt-3">
+                    <h6>存在以下问题:</h6>
+                    <ul>
+                        {% for issue in issues %}
+                        <li>{{ issue }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">系统信息</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <th>操作系统</th>
+                            <td>{{ env_info.system.os }}</td>
+                        </tr>
+                        <tr>
+                            <th>系统版本</th>
+                            <td>{{ env_info.system.os_version }}</td>
+                        </tr>
+                        <tr>
+                            <th>架构</th>
+                            <td>{{ env_info.system.architecture }}</td>
+                        </tr>
+                        <tr>
+                            <th>处理器</th>
+                            <td>{{ env_info.system.processor }}</td>
+                        </tr>
+                        <tr>
+                            <th>总内存</th>
+                            <td>{{ env_info.system.memory_total }} GB</td>
+                        </tr>
+                        <tr>
+                            <th>可用内存</th>
+                            <td>{{ env_info.system.memory_available }} GB</td>
+                        </tr>
+                        <tr>
+                            <th>总磁盘空间</th>
+                            <td>{{ env_info.system.disk_total }} GB</td>
+                        </tr>
+                        <tr>
+                            <th>可用磁盘空间</th>
+                            <td>{{ env_info.system.disk_free }} GB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">GPU信息</h5>
+            </div>
+            <div class="card-body">
+                {% if env_info.gpu.cuda_available %}
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <th>CUDA版本</th>
+                            <td>{{ env_info.gpu.cuda_version }}</td>
+                        </tr>
+                        <tr>
+                            <th>GPU数量</th>
+                            <td>{{ env_info.gpu.gpu_count }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h6 class="mt-4">GPU设备</h6>
+                {% for device in env_info.gpu.devices %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ device.name }}</h6>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th>总内存</th>
+                                    <td>{{ device.memory_total }} GB</td>
+                                </tr>
+                                <tr>
+                                    <th>已分配内存</th>
+                                    <td>{{ device.memory_allocated }} GB</td>
+                                </tr>
+                                <tr>
+                                    <th>已保留内存</th>
+                                    <td>{{ device.memory_reserved }} GB</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> 未检测到可用的GPU
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Python环境</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <tbody>
+                        <tr>
+                            <th>Python版本</th>
+                            <td>{{ env_info.python.python_version }}</td>
+                        </tr>
+                        <tr>
+                            <th>Python实现</th>
+                            <td>{{ env_info.python.python_implementation }}</td>
+                        </tr>
+                        <tr>
+                            <th>PyTorch版本</th>
+                            <td>{{ env_info.python.torch_version }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">依赖包</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>包名</th>
+                            <th>状态</th>
+                            <th>版本</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for package, info in env_info.dependencies.items() %}
+                        <tr>
+                            <td>{{ package }}</td>
+                            <td>
+                                {% if info.installed %}
+                                <span class="badge bg-success">已安装</span>
+                                {% else %}
+                                <span class="badge bg-danger">未安装</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ info.version if info.version else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}训练 - 大模型微调平台{% endblock %}
+
+{% block page_title %}模型训练{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">训练状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="training-progress">
+                    <div class="progress mb-3">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    <div id="training-status" class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 准备开始训练...
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">训练参数</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>批次大小</th>
+                                            <td>{{ training_args.per_device_train_batch_size }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>学习率</th>
+                                            <td>{{ training_args.learning_rate }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>训练轮数</th>
+                                            <td>{{ training_args.num_train_epochs }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>权重衰减</th>
+                                            <td>{{ training_args.weight_decay }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>预热步数</th>
+                                            <td>{{ training_args.warmup_steps }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>梯度累积步数</th>
+                                            <td>{{ training_args.gradient_accumulation_steps }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>最大步数</th>
+                                            <td>{{ training_args.max_steps }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>优化器</th>
+                                            <td>{{ training_args.optim }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>学习率调度器</th>
+                                            <td>{{ training_args.lr_scheduler_type }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">LoRA配置</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>LoRA秩 (r)</th>
+                                            <td>{{ lora_config.r }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>LoRA Alpha</th>
+                                            <td>{{ lora_config.lora_alpha }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>LoRA Dropout</th>
+                                            <td>{{ lora_config.lora_dropout }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>任务类型</th>
+                                            <td>{{ lora_config.task_type }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">训练进度</h6>
+                                <div id="training-metrics" class="mt-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h3 id="current-step">0</h3>
+                                                    <p class="mb-0">当前步数</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h3 id="current-loss">-</h3>
+                                                    <p class="mb-0">当前损失</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h3 id="training-time">00:00:00</h3>
+                                                    <p class="mb-0">训练时间</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card bg-light">
+                                                <div class="card-body text-center">
+                                                    <h3 id="eta">--:--:--</h3>
+                                                    <p class="mb-0">预计剩余时间</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">训练控制</h6>
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-3">
+                                    <button id="start-training" class="btn btn-primary">
+                                        <i class="bi bi-play-fill"></i> 开始训练
+                                    </button>
+                                    <button id="pause-training" class="btn btn-warning" disabled>
+                                        <i class="bi bi-pause-fill"></i> 暂停训练
+                                    </button>
+                                    <button id="stop-training" class="btn btn-danger" disabled>
+                                        <i class="bi bi-stop-fill"></i> 停止训练
+                                    </button>
+                                </div>
+                                <div class="mt-4">
+                                    <h6>训练日志</h6>
+                                    <div id="training-log" class="bg-dark text-light p-3 rounded" style="height: 200px; overflow-y: auto; font-family: monospace;">
+                                        <!-- 训练日志将在这里显示 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 训练状态轮询间隔（毫秒）
+    const POLL_INTERVAL = 2000;
+    
+    // 训练状态
+    let trainingActive = false;
+    let trainingStartTime = null;
+    let pollingTimer = null;
+    
+    // DOM元素
+    const progressBar = document.getElementById('progress-bar');
+    const trainingStatus = document.getElementById('training-status');
+    const currentStep = document.getElementById('current-step');
+    const currentLoss = document.getElementById('current-loss');
+    const trainingTime = document.getElementById('training-time');
+    const eta = document.getElementById('eta');
+    const trainingLog = document.getElementById('training-log');
+    
+    // 按钮
+    const startButton = document.getElementById('start-training');
+    const pauseButton = document.getElementById('pause-training');
+    const stopButton = document.getElementById('stop-training');
+    
+    // 格式化时间（秒 -> HH:MM:SS）
+    function formatTime(seconds) {
+        if (!seconds || isNaN(seconds)) return '--:--:--';
+        
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        
+        return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    
+    // 更新训练状态UI
+    function updateTrainingUI(data) {
+        // 更新进度条
+        if (data.total_steps > 0) {
+            const progress = Math.min(100, Math.round((data.current_step / data.total_steps) * 100));
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressBar.textContent = `${progress}%`;
+        }
+        
+        // 更新状态信息
+        if (data.status === 'training') {
+            trainingStatus.className = 'alert alert-info';
+            trainingStatus.innerHTML = `<i class="bi bi-arrow-repeat"></i> 正在训练中...`;
+            trainingActive = true;
+        } else if (data.status === 'paused') {
+            trainingStatus.className = 'alert alert-warning';
+            trainingStatus.innerHTML = `<i class="bi bi-pause-circle"></i> 训练已暂停`;
+            trainingActive = false;
+        } else if (data.status === 'completed') {
+            trainingStatus.className = 'alert alert-success';
+            trainingStatus.innerHTML = `<i class="bi bi-check-circle"></i> 训练已完成！`;
+            trainingActive = false;
+            clearInterval(pollingTimer);
+        } else if (data.status === 'error') {
+            trainingStatus.className = 'alert alert-danger';
+            trainingStatus.innerHTML = `<i class="bi bi-exclamation-triangle"></i> 训练出错: ${data.error || '未知错误'}`;
+            trainingActive = false;
+            clearInterval(pollingTimer);
+        }
+        
+        // 更新指标
+        currentStep.textContent = data.current_step || 0;
+        currentLoss.textContent = data.current_loss ? data.current_loss.toFixed(4) : '-';
+        
+        // 更新时间
+        if (data.training_time) {
+            trainingTime.textContent = formatTime(data.training_time);
+        }
+        
+        if (data.eta) {
+            eta.textContent = formatTime(data.eta);
+        }
+        
+        // 更新按钮状态
+        updateButtonStates(data.status);
+        
+        // 添加日志
+        if (data.latest_log) {
+            appendToLog(data.latest_log);
+        }
+    }
+    
+    // 更新按钮状态
+    function updateButtonStates(status) {
+        if (status === 'training') {
+            startButton.disabled = true;
+            pauseButton.disabled = false;
+            stopButton.disabled = false;
+        } else if (status === 'paused') {
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            stopButton.disabled = false;
+        } else {
+            startButton.disabled = false;
+            pauseButton.disabled = true;
+            stopButton.disabled = true;
+        }
+    }
+    
+    // 添加日志
+    function appendToLog(message) {
+        const now = new Date();
+        const timestamp = `[${now.toLocaleTimeString()}]`;
+        trainingLog.innerHTML += `<div>${timestamp} ${message}</div>`;
+        trainingLog.scrollTop = trainingLog.scrollHeight;
+    }
+    
+    // 轮询训练状态
+    function pollTrainingStatus() {
+        fetch('/training_status')
+            .then(response => response.json())
+            .then(data => {
+                updateTrainingUI(data);
+            })
+            .catch(error => {
+                console.error('获取训练状态失败:', error);
+                appendToLog(`获取训练状态失败: ${error.message}`);
+            });
+    }
+    
+    // 开始训练
+    function startTraining() {
+        fetch('/api/start_training', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    trainingActive = true;
+                    trainingStartTime = new Date();
+                    appendToLog('训练已开始');
+                    
+                    // 开始轮询训练状态
+                    if (pollingTimer) clearInterval(pollingTimer);
+                    pollingTimer = setInterval(pollTrainingStatus, POLL_INTERVAL);
+                    
+                    // 立即更新一次UI
+                    pollTrainingStatus();
+                } else {
+                    appendToLog(`开始训练失败: ${data.error || '未知错误'}`);
+                }
+            })
+            .catch(error => {
+                console.error('开始训练请求失败:', error);
+                appendToLog(`开始训练请求失败: ${error.message}`);
+            });
+    }
+    
+    // 暂停训练
+    function pauseTraining() {
+        fetch('/api/pause_training', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    trainingActive = false;
+                    appendToLog('训练已暂停');
+                    pollTrainingStatus(); // 立即更新UI
+                } else {
+                    appendToLog(`暂停训练失败: ${data.error || '未知错误'}`);
+                }
+            })
+            .catch(error => {
+                console.error('暂停训练请求失败:', error);
+                appendToLog(`暂停训练请求失败: ${error.message}`);
+            });
+    }
+    
+    // 停止训练
+    function stopTraining() {
+        if (!confirm('确定要停止训练吗？这将终止当前的训练进程。')) {
+            return;
+        }
+        
+        fetch('/api/stop_training', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    trainingActive = false;
+                    clearInterval(pollingTimer);
+                    appendToLog('训练已停止');
+                    pollTrainingStatus(); // 立即更新UI
+                } else {
+                    appendToLog(`停止训练失败: ${data.error || '未知错误'}`);
+                }
+            })
+            .catch(error => {
+                console.error('停止训练请求失败:', error);
+                appendToLog(`停止训练请求失败: ${error.message}`);
+            });
+    }
+    
+    // 事件监听
+    startButton.addEventListener('click', startTraining);
+    pauseButton.addEventListener('click', pauseTraining);
+    stopButton.addEventListener('click', stopTraining);
+    
+    // 页面加载时获取一次训练状态
+    document.addEventListener('DOMContentLoaded', () => {
+        appendToLog('页面已加载，准备开始训练...');
+        pollTrainingStatus();
+    });
+</script>
+{% endblock %}

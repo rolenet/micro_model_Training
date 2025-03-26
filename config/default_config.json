@@ -1,0 +1,32 @@
+{
+    "model": {
+        "default_model": "meta-llama/Llama-2-7b-hf",
+        "local_models_dir": "./data/models"
+    },
+    "dataset": {
+        "default_dataset": "tatsu-lab/alpaca",
+        "local_datasets_dir": "./data/datasets"
+    },
+    "training": {
+        "batch_size": 4,
+        "learning_rate": 2e-4,
+        "num_epochs": 3,
+        "max_steps": 1000,
+        "gradient_accumulation_steps": 1,
+        "warmup_ratio": 0.03,
+        "lora_r": 8,
+        "lora_alpha": 16,
+        "lora_dropout": 0.05,
+        "max_seq_length": 512,
+        "weight_decay": 0.01,
+        "optimizer": "adamw_torch",
+        "scheduler": "cosine"
+    },
+    "system": {
+        "save_steps": 100,
+        "eval_steps": 100,
+        "logging_steps": 10,
+        "output_dir": "./outputs",
+        "log_dir": "./logs"
+    }
+}

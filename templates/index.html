@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 大模型微调平台{% endblock %}
+
+{% block page_title %}欢迎使用大模型微调平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">平台介绍</h5>
+                <p class="card-text">
+                    这是一个可扩展的大模型微调平台，支持模型下载、数据集管理、环境检测和微调配置等功能。
+                    通过简单的界面操作，您可以轻松完成大模型的微调过程。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-check-circle"></i> 环境检测</h5>
+                <p class="card-text">检测当前环境是否满足微调要求，包括GPU、内存和依赖包等。</p>
+                <a href="{{ url_for('env_check') }}" class="btn btn-primary">开始检测</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-box"></i> 模型管理</h5>
+                <p class="card-text">支持从HuggingFace下载模型或指定本地模型路径，管理模型文件。</p>
+                <a href="{{ url_for('model_management') }}" class="btn btn-primary">管理模型</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-database"></i> 数据集管理</h5>
+                <p class="card-text">支持从HuggingFace下载数据集或使用本地数据，管理训练数据。</p>
+                <a href="{{ url_for('dataset_management') }}" class="btn btn-primary">管理数据集</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-gear"></i> 训练配置</h5>
+                <p class="card-text">设置微调参数，包括批次大小、学习率、训练轮数等。</p>
+                <a href="{{ url_for('training_config') }}" class="btn btn-primary">配置训练</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-graph-up"></i> 训练监控</h5>
+                <p class="card-text">监控微调过程，查看损失曲线和评估指标等。</p>
+                <a href="{{ url_for('training_logs') }}" class="btn btn-primary">查看监控</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

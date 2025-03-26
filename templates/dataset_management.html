@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}数据集管理 - 大模型微调平台{% endblock %}
+
+{% block page_title %}数据集管理{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">加载数据集</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('dataset_management') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.dataset_source.label(class="form-label") }}
+                        {{ form.dataset_source(class="form-select") }}
+                    </div>
+                    
+                    <div class="mb-3" id="huggingface-fields">
+                        {{ form.dataset_id.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.dataset_id(class="form-control", placeholder="例如：tatsu-lab/alpaca") }}
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="输入HuggingFace上的数据集ID">
+                                <i class="bi bi-question-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="local-fields">
+                        {{ form.local_path.label(class="form-label") }}
+                        {{ form.local_path(class="form-control", placeholder="例如：/path/to/dataset") }}
+                        <div class="form-text">指定本地数据集的路径</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.config_name.label(class="form-label") }}
+                        {{ form.config_name(class="form-select") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.split.label(class="form-label") }}
+                        {{ form.split(class="form-select") }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">当前数据集</h5>
+            </div>
+            <div class="card-body">
+                {% if current_dataset %}
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle"></i> 已加载数据集</h6>
+                    <p class="mb-1"><strong>名称：</strong>{{ current_dataset.name }}</p>
+                    <p class="mb-1"><strong>来源：</strong>{{ current_dataset.source }}</p>
+                    <p class="mb-1"><strong>配置：</strong>{{ current_dataset.config }}</p>
+                    <p class="mb-1"><strong>分割：</strong>{{ current_dataset.split }}</p>
+                    <p class="mb-1"><strong>样本数：</strong>{{ current_dataset.num_samples }}</p>
+                </div>
+                <div class="mt-3">
+                    <h6>数据集预览</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    {% for column in current_dataset.columns %}
+                                    <th>{{ column }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sample in current_dataset.samples %}
+                                <tr>
+                                    {% for column in current_dataset.columns %}
+                                    <td>{{ sample[column]|truncate(50) }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 尚未加载数据集，请使用左侧表单加载数据集。
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 根据数据集来源切换表单字段的显示
+    document.addEventListener('DOMContentLoaded', function() {
+        const datasetSource = document.getElementById('dataset_source');
+        const huggingfaceFields = document.getElementById('huggingface-fields');
+        const localFields = document.getElementById('local-fields');
+        
+        function updateFieldsVisibility() {
+            if (datasetSource.value === 'huggingface') {
+                huggingfaceFields.style.display = 'block';
+                localFields.style.display = 'none';
+            } else {
+                huggingfaceFields.style.display = 'none';
+                localFields.style.display = 'block';
+            }
+        }
+        
+        updateFieldsVisibility();
+        datasetSource.addEventListener('change', updateFieldsVisibility);
+        
+        // 初始化工具提示
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

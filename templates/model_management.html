@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}模型管理{% endblock %}
+{% block page_title %}模型管理{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h1>模型管理</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>加载模型</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('model_management') }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-group mb-3">
+                    <label>模型来源</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="model_source" id="source_local" value="local" checked>
+                        <label class="form-check-label" for="source_local">本地模型</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="model_source" id="source_huggingface" value="huggingface">
+                        <label class="form-check-label" for="source_huggingface">HuggingFace模型</label>
+                    </div>
+                </div>
+                
+                <div id="local_model_section" class="mb-3">
+                    <label for="local_path" class="form-label">本地模型路径</label>
+                    {{ form.local_path(class="form-control") }}
+                </div>
+                
+                <div id="huggingface_model_section" class="mb-3" style="display: none;">
+                    <label for="model_id" class="form-label">HuggingFace模型ID</label>
+                    {{ form.model_id(class="form-control") }}
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label>加载选项</label>
+                    <div class="form-check">
+                        {{ form.use_unsloth(class="form-check-input") }}
+                        <label class="form-check-label" for="use_unsloth">使用Unsloth加载（优化微调性能）</label>
+                    </div>
+                    <div class="form-check">
+                        {{ form.load_in_8bit(class="form-check-input") }}
+                        <label class="form-check-label" for="load_in_8bit">8位量化</label>
+                    </div>
+                    <div class="form-check">
+                        {{ form.load_in_4bit(class="form-check-input") }}
+                        <label class="form-check-label" for="load_in_4bit">4位量化</label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">加载模型</button>
+            </form>
+        </div>
+    </div>
+    
+    {% if model_loaded %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>当前加载的模型</h5>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>名称</th>
+                        <td>{{ model_info.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>路径</th>
+                        <td>{{ model_info.path }}</td>
+                    </tr>
+                    <tr>
+                        <th>架构</th>
+                        <td>{{ model_info.architecture }}</td>
+                    </tr>
+                    <tr>
+                        <th>词汇表大小</th>
+                        <td>{{ model_info.vocab_size }}</td>
+                    </tr>
+                    <tr>
+                        <th>隐藏层大小</th>
+                        <td>{{ model_info.hidden_size }}</td>
+                    </tr>
+                    <tr>
+                        <th>层数</th>
+                        <td>{{ model_info.num_layers }}</td>
+                    </tr>
+                    <tr>
+                        <th>注意力头数</th>
+                        <td>{{ model_info.num_attention_heads }}</td>
+                    </tr>
+                    <tr>
+                        <th>最大位置嵌入</th>
+                        <td>{{ model_info.max_position_embeddings }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>本地模型</h5>
+        </div>
+        <div class="card-body">
+            {% if local_models %}
+            <ul class="list-group">
+                {% for model in local_models %}
+                <li class="list-group-item">{{ model }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>没有找到本地模型</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>搜索HuggingFace模型</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('model_management') }}" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="输入关键词搜索模型">
+                    <button type="submit" class="btn btn-primary">搜索</button>
+                </div>
+            </form>
+            
+            {% if hf_models %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>模型ID</th>
+                        <th>下载量</th>
+                        <th>点赞数</th>
+                        <th>标签</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for model in hf_models %}
+                    <tr>
+                        <td>{{ model.id }}</td>
+                        <td>{{ model.downloads }}</td>
+                        <td>{{ model.likes }}</td>
+                        <td>{{ model.tags|join(', ') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // 切换模型来源表单
+    document.querySelectorAll('input[name="model_source"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'local') {
+                document.getElementById('local_model_section').style.display = 'block';
+                document.getElementById('huggingface_model_section').style.display = 'none';
+            } else {
+                document.getElementById('local_model_section').style.display = 'none';
+                document.getElementById('huggingface_model_section').style.display = 'block';
+            }
+        });
+    });
+</script>
+{% endblock %}

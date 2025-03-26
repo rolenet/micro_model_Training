@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}训练监控 - 大模型微调平台{% endblock %}
+
+{% block page_title %}训练监控{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">训练状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="training-status">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <span class="ms-2">正在加载训练状态...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">损失曲线</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="lossChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">学习率曲线</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="lrChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">训练日志</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>步骤</th>
+                                <th>损失</th>
+                                <th>学习率</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-table-body">
+                            <tr>
+                                <td colspan="4" class="text-center">暂无训练日志</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 初始化图表
+    let lossChart = null;
+    let lrChart = null;
+    
+    function initCharts() {
+        // 初始化损失曲线图表
+        const lossCtx = document.getElementById('lossChart').getContext('2d');
+        lossChart = new Chart(lossCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '训练损失',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '训练损失曲线'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '训练步骤'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '损失值'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 初始化学习率曲线图表
+        const lrCtx = document.getElementById('lrChart').getContext('2d');
+        lrChart = new Chart(lrCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '学习率',
+                    data: [],
+                    borderColor: 'rgb(153, 102, 255)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '学习率曲线'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '训练步骤'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: '学习率'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toExponential(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 更新训练状态信息
+    function updateTrainingStatus(data) {
+        const statusDiv = document.getElementById('training-status');
+        const summary = data.summary || {};
+        
+        let statusHtml = '<div class="card bg-light mb-3">';
+        statusHtml += '<div class="card-body">';
+        statusHtml += '<div class="row">';
+        
+        // 训练步骤信息
+        statusHtml += '<div class="col-md-3 mb-3">';
+        statusHtml += '<div class="card h-100">';
+        statusHtml += '<div class="card-body text-center">';
+        statusHtml += `<h3>${summary.total_steps || 0}</h3>`;
+        statusHtml += '<p class="mb-0">总训练步数</p>';
+        statusHtml += '</div></div></div>';
+        
+        // 平均损失信息
+        statusHtml += '<div class="col-md-3 mb-3">';
+        statusHtml += '<div class="card h-100">';
+        statusHtml += '<div class="card-body text-center">';
+        statusHtml += `<h3>${summary.avg_loss ? summary.avg_loss.toFixed(4) : '0.0000'}</h3>`;
+        statusHtml += '<p class="mb-0">平均损失</p>';
+        statusHtml += '</div></div></div>';
+        
+        // 最终损失信息
+        statusHtml += '<div class="col-md-3 mb-3">';
+        statusHtml += '<div class="card h-100">';
+        statusHtml += '<div class="card-body text-center">';
+        statusHtml += `<h3>${summary.final_loss ? summary.final_loss.toFixed(4) : '0.0000'}</h3>`;
+        statusHtml += '<p class="mb-0">最终损失</p>';
+        statusHtml += '</div></div></div>';
+        
+        // 训练时间信息
+        statusHtml += '<div class="col-md-3 mb-3">';
+        statusHtml += '<div class="card h-100">';
+        statusHtml += '<div class="card-body text-center">';
+        const hours = Math.floor(summary.training_time / 3600);
+        const minutes = Math.floor((summary.training_time % 3600) / 60);
+        const seconds = Math.floor(summary.training_time % 60);
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        statusHtml += `<h3>${summary.training_time ? timeStr : '00:00:00'}</h3>`;
+        statusHtml += '<p class="mb-0">训练时间</p>';
+        statusHtml += '</div></div></div>';
+        
+        statusHtml += '</div></div></div>';
+        
+        statusDiv.innerHTML = statusHtml;
+    }
+
+    // 更新训练日志表格
+    function updateLogTable(logs) {
+        const tableBody = document.getElementById('log-table-body');
+        if (!logs || logs.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">暂无训练日志</td></tr>';
+            return;
+        }
+        
+        let tableHtml = '';
+        // 只显示最新的20条日志
+        const recentLogs = logs.slice(-20);
+        
+        for (const log of recentLogs) {
+            const date = new Date(log.time * 1000);
+            const timeStr = date.toLocaleTimeString();
+            
+            tableHtml += '<tr>';
+            tableHtml += `<td>${log.step}</td>`;
+            tableHtml += `<td>${log.loss.toFixed(6)}</td>`;
+            tableHtml += `<td>${log.learning_rate.toExponential(4)}</td>`;
+            tableHtml += `<td>${timeStr}</td>`;
+            tableHtml += '</tr>';
+        }
+        
+        tableBody.innerHTML = tableHtml;
+    }
+
+    // 更新图表数据
+    function updateCharts(logs) {
+        if (!logs || logs.length === 0) return;
+        
+        // 获取步骤、损失和学习率数据
+        const steps = logs.map(log => log.step);
+        const losses = logs.map(log => log.loss);
+        const learningRates = logs.map(log => log.learning_rate);
+        
+        // 更新损失曲线
+        lossChart.data.labels = steps;
+        lossChart.data.datasets[0].data = losses;
+        lossChart.update();
+        
+        // 更新学习率曲线
+        lrChart.data.labels = steps;
+        lrChart.data.datasets[0].data = learningRates;
+        lrChart.update();
+    }
+
+    // 从API获取训练日志数据
+    function fetchTrainingLogs() {
+        fetch('/api/training_logs')
+            .then(response => response.json())
+            .then(data => {
+                // 更新训练状态
+                updateTrainingStatus(data);
+                
+                // 更新图表和日志表格
+                const trainingLogs = data.training_logs || [];
+                updateCharts(trainingLogs);
+                updateLogTable(trainingLogs);
+            })
+            .catch(error => {
+                console.error('获取训练日志失败:', error);
+                document.getElementById('training-status').innerHTML = 
+                    '<div class="alert alert-danger">获取训练日志失败，请刷新页面重试</div>';
+            });
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化图表
+        initCharts();
+        
+        // 首次加载数据
+        fetchTrainingLogs();
+        
+        // 设置定时刷新（每5秒刷新一次）
+        setInterval(fetchTrainingLogs, 5000);
+    });
+</script>
+{% endblock %}

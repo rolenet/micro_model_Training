@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}训练配置 - 大模型微调平台{% endblock %}
+{% block page_title %}训练配置{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">训练参数配置</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('training_config') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">基本训练参数</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="batch_size" class="form-label">批次大小</label>
+                                    {{ form.batch_size(class="form-control") }}
+                                    <div class="form-text">每个设备上的训练批次大小</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="learning_rate" class="form-label">学习率</label>
+                                    {{ form.learning_rate(class="form-control") }}
+                                    <div class="form-text">初始学习率</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="num_epochs" class="form-label">训练轮数</label>
+                                    {{ form.num_epochs(class="form-control") }}
+                                    <div class="form-text">完整数据集的训练次数</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="max_steps" class="form-label">最大步数</label>
+                                    {{ form.max_steps(class="form-control") }}
+                                    <div class="form-text">训练的最大步数，设为-1表示不限制</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="gradient_accumulation_steps" class="form-label">梯度累积步数</label>
+                                    {{ form.gradient_accumulation_steps(class="form-control") }}
+                                    <div class="form-text">在执行一次优化步骤前累积的更新步数</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="warmup_ratio" class="form-label">预热比例</label>
+                                    {{ form.warmup_ratio(class="form-control") }}
+                                    <div class="form-text">学习率预热的步数比例</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="weight_decay" class="form-label">权重衰减</label>
+                                    {{ form.weight_decay(class="form-control") }}
+                                    <div class="form-text">权重衰减系数</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="max_seq_length" class="form-label">最大序列长度</label>
+                                    {{ form.max_seq_length(class="form-control") }}
+                                    <div class="form-text">输入序列的最大长度</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6 class="mb-3">LoRA参数</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="lora_r" class="form-label">LoRA秩 (r)</label>
+                                    {{ form.lora_r(class="form-control") }}
+                                    <div class="form-text">LoRA适配器的秩</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="lora_alpha" class="form-label">LoRA Alpha</label>
+                                    {{ form.lora_alpha(class="form-control") }}
+                                    <div class="form-text">LoRA的缩放参数</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="lora_dropout" class="form-label">LoRA Dropout</label>
+                                    {{ form.lora_dropout(class="form-control") }}
+                                    <div class="form-text">LoRA层的dropout概率</div>
+                                </div>
+                                
+                                <h6 class="mb-3 mt-4">数据集配置</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="text_column" class="form-label">文本列名</label>
+                                    {{ form.text_column(class="form-control") }}
+                                    <div class="form-text">数据集中文本列的名称</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="instruction_column" class="form-label">指令列名</label>
+                                    {{ form.instruction_column(class="form-control") }}
+                                    <div class="form-text">数据集中指令列的名称</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="response_column" class="form-label">回复列名</label>
+                                    {{ form.response_column(class="form-control") }}
+                                    <div class="form-text">数据集中回复列的名称</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">优化器设置</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="optimizer" class="form-label">优化器</label>
+                                    {{ form.optimizer(class="form-select") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="scheduler" class="form-label">学习率调度器</label>
+                                    {{ form.scheduler(class="form-select") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6 class="mb-3">系统参数</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="save_steps" class="form-label">保存步数</label>
+                                    {{ form.save_steps(class="form-control") }}
+                                    <div class="form-text">每隔多少步保存一次检查点</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="eval_steps" class="form-label">评估步数</label>
+                                    {{ form.eval_steps(class="form-control") }}
+                                    <div class="form-text">每隔多少步进行一次评估</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="logging_steps" class="form-label">日志步数</label>
+                                    {{ form.logging_steps(class="form-control") }}
+                                    <div class="form-text">每隔多少步记录一次日志</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="output_dir" class="form-label">输出目录</label>
+                                    {{ form.output_dir(class="form-control") }}
+                                    <div class="form-text">模型和检查点的保存目录</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <h6 class="mb-3">混合精度训练</h6>
+                                
+                                <div class="mb-3 form-check">
+                                    {{ form.fp16(class="form-check-input") }}
+                                    <label class="form-check-label" for="fp16">启用FP16混合精度训练</label>
+                                    <div class="form-text">使用半精度浮点数加速训练</div>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    {{ form.bf16(class="form-check-input") }}
+                                    <label class="form-check-label" for="bf16">启用BF16混合精度训练</label>
+                                    <div class="form-text">使用bfloat16格式加速训练（需要支持的硬件）</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+                            <a href="{{ url_for('start_training') }}" class="btn btn-success">开始训练</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if config_saved %}
+    <div class="alert alert-success mt-3">
+        <i class="bi bi-check-circle"></i> 配置已保存！
+    </div>
+    {% endif %}
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">当前训练配置摘要</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>训练参数</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            批次大小
+                            <span class="badge bg-primary rounded-pill">{{ form.batch_size.data }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            学习率
+                            <span class="badge bg-primary rounded-pill">{{ form.learning_rate.data }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            训练轮数
+                            <span class="badge bg-primary rounded-pill">{{ form.num_epochs.data }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            LoRA秩
+                            <span class="badge bg-primary rounded-pill">{{ form.lora_r.data }}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>系统参数</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            保存步数
+                            <span class="badge bg-primary rounded-pill">{{ form.save_steps.data }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            评估步数
+                            <span class="badge bg-primary rounded-pill">{{ form.eval_steps.data }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            日志步数
+                            <span class="badge bg-primary rounded-pill">{{ form.logging_steps.data }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            优化器
+                            <span class="badge bg-primary rounded-pill">{{ form.optimizer.data }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 表单验证
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            const batchSize = document.getElementById('batch_size').value;
+            const learningRate = document.getElementById('learning_rate').value;
+            
+            if (batchSize <= 0) {
+                alert('批次大小必须大于0');
+                event.preventDefault();
+                return false;
+            }
+            
+            if (learningRate <= 0) {
+                alert('学习率必须大于0');
+                event.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+{% endblock %}
